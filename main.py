@@ -107,16 +107,20 @@ def main():
         logger.info(f"  {len(all_old_atos_files)} old atos files in `{folder}`")
         for atos_file in all_old_atos_files:
             try:
+                file_size_mb = atos_file.stat().st_size / 1024 / 1024
                 # step 1: open in GOM inspect
                 gom.script.sys.load_project(file=str(atos_file))
 
                 # step 2: reduce project size
-                logger.info(f"Reducing project size of `{folder}`")
+                logger.info(
+                    f"Reducing project size of `{folder}` ({file_size_mb:.2f}MB)"
+                )
                 gom.script.atos.remove_measuring_data_from_project(
                     remove_data="remove_all_data"
                 )
                 gom.script.sys.save_project()
-                logger.info(f"Finished cleanup of `{folder}`")
+                file_size_mb = atos_file.stat().st_size / 1024 / 1024
+                logger.info(f"Finished cleanup of `{folder}` ({file_size_mb:.2f}MB)")
             except Exception as e:
                 stacktrace = "\n".join(
                     [
