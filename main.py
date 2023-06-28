@@ -35,9 +35,9 @@ logger.addHandler(console_handler)
 
 
 def show_error_popup(errors: str):
-    logger.error(f"Error in cleanup job: {errors}")
+
     gom.script.sys.execute_user_defined_dialog(
-        content="""<dialog>
+        content=f"""<dialog>
         <title>Error in cleanup</title>
         <style></style>
         <control id="Close"/>
@@ -63,9 +63,9 @@ def show_error_popup(errors: str):
         <tooltip></tooltip>
         <text>&lt;!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">
         &lt;html>&lt;head>&lt;meta name="qrichtext" content="1" />&lt;style type="text/css">
-        p, li { white-space: pre-wrap; }
+        p, li {{ white-space: pre-wrap; }}
         &lt;/style>&lt;/head>&lt;body style="    ">
-        &lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">Issue with cleanup&lt;/p>&lt;/body>&lt;/html></text>
+        &lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">{errors}&lt;/p>&lt;/body>&lt;/html></text>
         <wordwrap>false</wordwrap>
         </widget>
         </content>
@@ -108,6 +108,7 @@ def main():
         for atos_file in all_old_atos_files:
             try:
                 file_size_mb = atos_file.stat().st_size / 1024 / 1024
+
                 # step 1: open in GOM inspect
                 gom.script.sys.load_project(file=str(atos_file))
 
@@ -136,18 +137,26 @@ def main():
 
             try:
                 logger.info(f"Closing `{folder}`")
-                # gom.script.sys.close_project()
+                gom.script.sys.close_project()
             except Exception:
                 pass
 
     if any(error_collector_per_folder.values()):
-        err_msg = "\n".join(
-            [
-                f"`{folder}`:\n{errors}"
-                for folder, errors in error_collector_per_folder.items()
-            ]
+        err_lines = ["Issue with cleanup:"]
+        for folder, errors in error_collector_per_folder.items():
+            err_lines += [f"`{folder}`:"]
+            for error in errors:
+                err_lines += [f"  {error}\n"]
+        err_lines = err_lines[:50]
+        err_msg = "\n".join(err_lines)
+        escaped_html_errors = (
+            err_msg.replace("\n", "<br/>")
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
         )
-        show_error_popup(err_msg)
+        escaped_html_errors = escaped_html_errors[:10000]
+        show_error_popup(escaped_html_errors)
 
 
 if __name__ == "__main__":
